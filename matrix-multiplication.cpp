@@ -268,11 +268,24 @@ Ciphertext<DCRTPoly> vectorMatrixMultByInnProdFastCP(
 }
 
 
+/**
+ * vectorMatrixMultPackCP
+ * @param cryptoContext
+ * @param publicKey
+ * @param vectorC
+ * @param matrix
+ * @param packing true column-wise, false row-wise
+ * @param masking
+ * @param transposing
+ * @return
+ */
 Ciphertext<DCRTPoly> vectorMatrixMultPackCP(
         CryptoContext<DCRTPoly> cryptoContext,
         PublicKey<DCRTPoly> publicKey,
         Ciphertext<DCRTPoly> vectorC,
         std::vector<std::vector<int64_t>> matrix,
+        bool packing = true,
+        int numRowsPrevMatrix = -1,
         bool masking = true,
         bool transposing = true
     )
@@ -283,40 +296,56 @@ Ciphertext<DCRTPoly> vectorMatrixMultPackCP(
 
     // Pad and flatten the matrix.
     size_t numRows = nextPowerOf2(ogNumRows);
-    size_t numCols = nextPowerOf2(ogNumCols);
+    size_t numCols = packing ? nextPowerOf2(ogNumCols) : nextPowerOf2(numRowsPrevMatrix);
     matrix = resizeMatrix(matrix, numRows, numCols);
-    std::vector<int64_t> matrixFlat = flattenMatrix(matrix, false);
+    std::vector<int64_t> matrixFlat = flattenMatrix(matrix, !packing);
     Plaintext matrixFlatP  = cryptoContext->MakePackedPlaintext(matrixFlat);
 
     // Pad and repeat the vector.
-    for (int i = 0; i < log2(numCols); i++)
-        vectorC = cryptoContext->EvalAdd(vectorC, cryptoContext->EvalRotate(vectorC, -(numRows << i)));
+    for (size_t i = 0; i < log2(ogNumCols); i++)
+        vectorC = cryptoContext->EvalAdd(vectorC, cryptoContext->EvalRotate(vectorC, -((packing ? numRows : 1) << i)));
     
     // Multiply and sum (the result is stored in the first row of the matrix).
     Ciphertext<DCRTPoly> prod = cryptoContext->EvalMult(vectorC, matrixFlatP);
-    for (int i = 0; i < log2(numRows); i++)
-        prod = cryptoContext->EvalAdd(prod, cryptoContext->EvalRotate(prod, 1 << i));
+    for (size_t i = 0; i < log2(numRows); i++)
+        prod = cryptoContext->EvalAdd(prod, cryptoContext->EvalRotate(prod, (packing ? 1 : numCols) << i));
 
     // Mask out the result.
-    if (masking) {
+    if (!(packing && transposing) && masking) {
         std::vector<int64_t> mask;
-        for (size_t i = 0; i < numCols; i++)
-            for (size_t j = 0; j < numRows; j++)
-                if (j == 0 && i < ogNumCols)
-                    mask.push_back(1);
-                else
-                    mask.push_back(0);
-        Plaintext maskP = cryptoContext->MakePackedPlaintext(mask); 
+        if (packing) {
+            for (size_t i = 0; i < numCols; i++)
+                for (size_t j = 0; j < numRows; j++)
+                    if (j == 0 && i < ogNumCols)
+                        mask.push_back(1);
+                    else
+                        mask.push_back(0);
+        } else {
+            mask.insert(mask.end(), ogNumCols, 1);
+        }
+        Plaintext maskP = cryptoContext->MakePackedPlaintext(mask);
         prod = cryptoContext->EvalMult(prod, maskP);
     }
 
     // Transpose the result.
-    if (transposing) {
+    // TODO: improve transposition (easy if rows >= cols)
+    if (packing && transposing) {
         const std::vector<int64_t> ZERO = {0};
         const Plaintext ZERO_PLAINTEXT = cryptoContext->MakePackedPlaintext(ZERO);
         Ciphertext<DCRTPoly> res = cryptoContext->Encrypt(publicKey, ZERO_PLAINTEXT);
-        for (size_t i = 0; i < ogNumCols; i++)
-            res = cryptoContext->EvalAdd(res, cryptoContext->EvalRotate(prod, i * (numRows - 1)));
+        std::vector<int64_t> mask = {1};
+        Plaintext maskP;
+        for (size_t i = 0; i < ogNumCols; i++) {
+            maskP = cryptoContext->MakePackedPlaintext(mask);
+            res = cryptoContext->EvalAdd(
+                    res,
+                    cryptoContext->EvalMult(
+                        cryptoContext->EvalRotate(
+                            prod,
+                            i * (numRows - 1)),
+                        maskP));
+            mask.insert(mask.begin(), 0);
+        }
         prod = res;
     }
 
@@ -331,7 +360,7 @@ int main(int argc, char* argv[]) {
  
     CCParams<CryptoContextBFVRNS> parameters;
     parameters.SetPlaintextModulus(536903681);
-    parameters.SetMultiplicativeDepth(2);
+    parameters.SetMultiplicativeDepth(4);
     parameters.SetMaxRelinSkDeg(3);
 
     CryptoContext<DCRTPoly> cryptoContext = GenCryptoContext(parameters);
@@ -357,7 +386,7 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Generating rotation keys... ";
     std::vector<int32_t> indexList = {};
-    for (int i = -124; i <= 124; i++) indexList.push_back(i);
+    for (int i = -1024; i <= 1024; i++) indexList.push_back(i);
     for (int i = 0; i <= 10; i++) {
         indexList.push_back(1 << i);
         indexList.push_back(-(1 << i));
@@ -427,17 +456,86 @@ int main(int argc, char* argv[]) {
     // Vector * matrix
     ////////////////////////////////////////////////////////////
 
-    const size_t ROWS = 5;
-    const size_t COLS = 3;
+    // const size_t ROWS = 5;
+    // const size_t COLS = 3;
+    // const int64_t MAX_VALUE = 100;
+    
+    // std::vector<int64_t> vector = genRandVect(ROWS, MAX_VALUE);
+    // Plaintext vectorP  = cryptoContext->MakePackedPlaintext(vector);
+
+    // std::vector<std::vector<int64_t>> matrix = genRandMatrix(ROWS, COLS, MAX_VALUE);
+    
+    // std::cout << "vector = " << vector << std::endl;
+    // std::cout << "matrix = " << matrix << std::endl;
+
+    // Ciphertext<DCRTPoly> vectorC = cryptoContext->Encrypt(keyPair.publicKey, vectorP);
+
+    // Ciphertext<DCRTPoly> resC;
+    // Plaintext res;
+    // std::vector<int64_t> resInt64, resInt64tmp;
+
+    // TIC(t);
+    // resInt64 = vectorMatrixMult(vector, matrix);
+    // processingTime = TOC(t);
+    // std::cout << "vector  * matrix                         = " << resInt64
+    //           << " (" << processingTime << " ms)" << std::endl;
+
+    // TIC(t);
+    // resC = vectorMatrixMultByInnProdCP(cryptoContext, keyPair.publicKey, vectorC, matrix);
+    // processingTime = TOC(t);
+    // cryptoContext->Decrypt(keyPair.secretKey, resC, &res);
+    // res->SetLength(COLS);
+    // resInt64 = res->GetPackedValue();
+    // std::cout << "vectorC * matrix (by inner product)      = " << resInt64
+    //           << " (" << processingTime << " ms)" << std::endl;
+    
+    // TIC(t);
+    // resC = vectorMatrixMultByInnProdFastCP(cryptoContext, keyPair.publicKey, vectorC, matrix);
+    // processingTime = TOC(t);
+    // cryptoContext->Decrypt(keyPair.secretKey, resC, &res);
+    // res->SetLength(COLS);
+    // resInt64 = res->GetPackedValue();
+    // std::cout << "vectorC * matrix (by inner product fast) = " << resInt64
+    //           << " (" << processingTime << " ms)" << std::endl;
+    
+    // TIC(t);
+    // resC = vectorMatrixMultPackCP(cryptoContext, keyPair.publicKey, vectorC, matrix);
+    // processingTime = TOC(t);
+    // cryptoContext->Decrypt(keyPair.secretKey, resC, &res);
+    // res->SetLength(COLS);
+    // resInt64 = res->GetPackedValue();
+    // std::cout << "vectorC * matrix (by column packing)     = " << resInt64
+    //           << " (" << processingTime << " ms)" << std::endl;
+    
+    // TIC(t);
+    // resC = vectorMatrixMultPackCP(cryptoContext, keyPair.publicKey, vectorC, matrix, true, -1, false, false);
+    // processingTime = TOC(t);
+    // cryptoContext->Decrypt(keyPair.secretKey, resC, &res);
+    // resInt64tmp = res->GetPackedValue();
+    // resInt64.clear();
+    // for (size_t i = 0; i < COLS; i++)
+    //     resInt64.push_back(resInt64tmp[nextPowerOf2(ROWS) * i]);
+    // std::cout << "vectorC * matrix (by column packing noT) = " << resInt64
+    //           << " (" << processingTime << " ms)" << std::endl;
+    
+    ////////////////////////////////////////////////////////////
+    // Vector * matrix1 * matrix2
+    ////////////////////////////////////////////////////////////
+
+    const size_t n1 = 30;
+    const size_t n2 = 20;
+    const size_t n3 = 25;
     const int64_t MAX_VALUE = 100;
     
-    std::vector<int64_t> vector = genRandVect(ROWS, MAX_VALUE);
+    std::vector<int64_t> vector = genRandVect(n1, MAX_VALUE);
     Plaintext vectorP  = cryptoContext->MakePackedPlaintext(vector);
 
-    std::vector<std::vector<int64_t>> matrix = genRandMatrix(ROWS, COLS, MAX_VALUE);
+    std::vector<std::vector<int64_t>> matrix1 = genRandMatrix(n1, n2, MAX_VALUE);
+    std::vector<std::vector<int64_t>> matrix2 = genRandMatrix(n2, n3, MAX_VALUE);
     
-    std::cout << "vector = " << vector << std::endl;
-    std::cout << "matrix = " << matrix << std::endl;
+    std::cout << "vector  = " << vector << std::endl;
+    std::cout << "matrix1 = " << matrix1 << std::endl;
+    std::cout << "matrix2 = " << matrix2 << std::endl;
 
     Ciphertext<DCRTPoly> vectorC = cryptoContext->Encrypt(keyPair.publicKey, vectorP);
 
@@ -446,49 +544,51 @@ int main(int argc, char* argv[]) {
     std::vector<int64_t> resInt64, resInt64tmp;
 
     TIC(t);
-    resInt64 = vectorMatrixMult(vector, matrix);
+    resInt64 = vectorMatrixMult(vector, matrix1);
+    resInt64 = vectorMatrixMult(resInt64, matrix2);
     processingTime = TOC(t);
-    std::cout << "vector  * matrix                         = " << resInt64
-              << " (" << processingTime << " ms)" << std::endl;
+    std::cout << "vector  * matrix1 * matrix2                         = "
+              << resInt64 << " (" << processingTime << " ms)" << std::endl;
+    
+    TIC(t);
+    resC = vectorMatrixMultByInnProdCP(cryptoContext, keyPair.publicKey, vectorC, matrix1);
+    resC = vectorMatrixMultByInnProdCP(cryptoContext, keyPair.publicKey, resC, matrix2);
+    processingTime = TOC(t);
+    cryptoContext->Decrypt(keyPair.secretKey, resC, &res);
+    res->SetLength(n3);
+    resInt64 = res->GetPackedValue();
+    std::cout << "vectorC * matrix1 * matrix2 (by inner product)      = "
+              << resInt64 << " (" << processingTime << " ms)" << std::endl;
+    
+    TIC(t);
+    resC = vectorMatrixMultByInnProdFastCP(cryptoContext, keyPair.publicKey, vectorC, matrix1);
+    resC = vectorMatrixMultByInnProdFastCP(cryptoContext, keyPair.publicKey, resC, matrix2);
+    processingTime = TOC(t);
+    cryptoContext->Decrypt(keyPair.secretKey, resC, &res);
+    res->SetLength(n3);
+    resInt64 = res->GetPackedValue();
+    std::cout << "vectorC * matrix1 * matrix2 (by inner product fast) = "
+              << resInt64 << " (" << processingTime << " ms)" << std::endl;
 
     TIC(t);
-    resC = vectorMatrixMultByInnProdCP(cryptoContext, keyPair.publicKey, vectorC, matrix);
+    resC = vectorMatrixMultPackCP(cryptoContext, keyPair.publicKey, vectorC, matrix1);
+    resC = vectorMatrixMultPackCP(cryptoContext, keyPair.publicKey, resC, matrix2);
     processingTime = TOC(t);
     cryptoContext->Decrypt(keyPair.secretKey, resC, &res);
-    res->SetLength(COLS);
+    res->SetLength(n3);
     resInt64 = res->GetPackedValue();
-    std::cout << "vectorC * matrix (by inner product)      = " << resInt64
-              << " (" << processingTime << " ms)" << std::endl;
+    std::cout << "vectorC * matrix1 * matrix2 (by column packing)     = "
+              << resInt64 << " (" << processingTime << " ms)" << std::endl;
     
     TIC(t);
-    resC = vectorMatrixMultByInnProdFastCP(cryptoContext, keyPair.publicKey, vectorC, matrix);
+    resC = vectorMatrixMultPackCP(cryptoContext, keyPair.publicKey, vectorC, matrix1, true, -1, true, false);
+    resC = vectorMatrixMultPackCP(cryptoContext, keyPair.publicKey, resC, matrix2, false, n1, true, false);
     processingTime = TOC(t);
     cryptoContext->Decrypt(keyPair.secretKey, resC, &res);
-    res->SetLength(COLS);
+    res->SetLength(n3);
     resInt64 = res->GetPackedValue();
-    std::cout << "vectorC * matrix (by inner product fast) = " << resInt64
-              << " (" << processingTime << " ms)" << std::endl;
-    
-    TIC(t);
-    resC = vectorMatrixMultPackCP(cryptoContext, keyPair.publicKey, vectorC, matrix);
-    processingTime = TOC(t);
-    cryptoContext->Decrypt(keyPair.secretKey, resC, &res);
-    res->SetLength(COLS);
-    resInt64 = res->GetPackedValue();
-    std::cout << "vectorC * matrix (by column packing)     = " << resInt64
-              << " (" << processingTime << " ms)" << std::endl;
-    
-    TIC(t);
-    resC = vectorMatrixMultPackCP(cryptoContext, keyPair.publicKey, vectorC, matrix, false, false);
-    processingTime = TOC(t);
-    cryptoContext->Decrypt(keyPair.secretKey, resC, &res);
-    resInt64tmp = res->GetPackedValue();
-    resInt64.clear();
-    for (size_t i = 0; i < COLS; i++)
-        resInt64.push_back(resInt64tmp[nextPowerOf2(ROWS) * i]);
-    std::cout << "vectorC * matrix (by column packing noT) = " << resInt64
-              << " (" << processingTime << " ms)" << std::endl;
-
+    std::cout << "vectorC * matrix1 * matrix2 (by alternate packing)  = "
+              << resInt64 << " (" << processingTime << " ms)" << std::endl;
 
     return 0;
 }
