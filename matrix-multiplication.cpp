@@ -382,6 +382,8 @@ Ciphertext<DCRTPoly> vectorMatrixMultByInnProdFastCP(
  * The naive algorithm with the recursive-sum inner product implementation is
  * used.
  * The output is automatically masked.
+ * Idea for alternate packing from Sav et al. Poseidon: Privacy-preserving
+ * federated neural network learning.
  * @param cryptoContext the crypto context
  * @param publicKey the public key
  * @param vectorC encrypted input vector
