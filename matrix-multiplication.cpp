@@ -30,7 +30,7 @@
 //==================================================================================
 
 /*
-    Matrix multiplication
+    Matrix multiplication.
 */
 
 #include <iostream>
@@ -40,7 +40,17 @@
 using namespace lbcrypto;
 
 
-std::vector<int64_t> genRandVect(size_t length, int64_t maxValue) {
+/**
+ * Generate random vector of size length, with values in [-maxValue, maxValue).
+ * @param length desired length of the vector
+ * @param maxValue absolute maximum value of the coefficients
+ * @return random vector
+ */
+std::vector<int64_t> genRandVect(
+        size_t length,
+        int64_t maxValue
+    )
+{
     std::srand(unsigned(std::time(nullptr)));
     auto myrand = [maxValue] () {
         return (std::rand() % (maxValue << 1)) - maxValue;
@@ -51,7 +61,20 @@ std::vector<int64_t> genRandVect(size_t length, int64_t maxValue) {
 }
 
 
-std::vector<std::vector<int64_t>> genRandMatrix(size_t rows, size_t cols, int64_t maxValue) {
+/**
+ * Generate random matrix of size (rows x cols), with values in [-maxValue,
+ * maxValue).
+ * @param rows desired number of rows
+ * @param cols desired number of columns
+ * @param maxValue absolute maximum value of the coefficients
+ * @return random matrix
+ */
+std::vector<std::vector<int64_t>> genRandMatrix(
+        size_t rows,
+        size_t cols,
+        int64_t maxValue
+    )
+{
     std::srand(unsigned(std::time(nullptr)));
     auto myrand = [maxValue] () {
         return (std::rand() % (maxValue << 1)) - maxValue;
@@ -63,33 +86,46 @@ std::vector<std::vector<int64_t>> genRandMatrix(size_t rows, size_t cols, int64_
 }
 
 
-std::vector<std::vector<int64_t>> transpose(std::vector<std::vector<int64_t>> matrix) {
-    std::vector<std::vector<int64_t>> matrixT(matrix[0].size(), std::vector<int64_t>(matrix.size()));
+/**
+ * Transpose the given matrix.
+ * @param matrix input matrix
+ * @return transposed matrix
+ */
+std::vector<std::vector<int64_t>> transpose(
+        std::vector<std::vector<int64_t>> matrix
+    )
+{
+    std::vector<std::vector<int64_t>> matrixT(
+        matrix[0].size(),
+        std::vector<int64_t>(matrix.size())
+    );
     for (size_t i = 0; i < matrix[0].size(); i++) 
-        for (size_t j = 0; j < matrix.size(); j++) {
+        for (size_t j = 0; j < matrix.size(); j++)
             matrixT[i][j] = matrix[j][i];
-        }
     return matrixT;
 }
 
 
 /**
- * nextPowerOf2 computes the least power of two greater or equal than the input.
- * @param n
+ * Compute the least power of two greater or equal than the input value.
+ * @param n input value
  * @return least power of two >= n
  */
-size_t nextPowerOf2(size_t n) {
+size_t nextPowerOf2(
+        size_t n
+    )
+{
     if (n == 0 || n == 1) return 1;
     else return 1 << ((int) log2(n - 1) + 1);
 }
 
 
 /**
- * resizeMatrix resizes the input matrix to reach the desired number of rows and
- * columns, by padding with 0s if necessary.
- * @param matrix
- * @param numRows
- * @param numCols
+ * Resize the input matrix to reach the desired number of rows and columns, by
+ * padding with 0s if necessary.
+ * @param matrix input matrix
+ * @param numRows output's number of rows
+ * @param numCols output's number of columns
  * @return resized matrix
  */
 std::vector<std::vector<int64_t>> resizeMatrix(
@@ -105,9 +141,9 @@ std::vector<std::vector<int64_t>> resizeMatrix(
 
 
 /**
- * flattenMatrix flattens the input matrix.
- * @param matrix
- * @param direction true row-wise, false column-wise
+ * Flatten the input matrix.
+ * @param matrix input matrix
+ * @param direction true for row-wise, false for column-wise
  * @return flattened matrix
  */
 std::vector<int64_t> flattenMatrix(
@@ -128,7 +164,17 @@ std::vector<int64_t> flattenMatrix(
 }
 
 
-int64_t innerProduct(std::vector<int64_t> vector1, std::vector<int64_t> vector2) {
+/**
+ * Compute the inner product between two (plaintext) vectors.
+ * @param vector1 first input vector
+ * @param vector2 second input vector
+ * @return inner product value
+ */
+int64_t innerProduct(
+        std::vector<int64_t> vector1,
+        std::vector<int64_t> vector2
+    )
+{
     int64_t inner_product = 0;
     for (size_t i = 0; i < vector1.size(); i++)
         inner_product += vector1[i] * vector2[i];
@@ -136,7 +182,17 @@ int64_t innerProduct(std::vector<int64_t> vector1, std::vector<int64_t> vector2)
 }
 
 
-std::vector<int64_t> vectorMatrixMult(std::vector<int64_t> vector, std::vector<std::vector<int64_t>> matrix) {
+/**
+ * Compute (plaintext) vector-matrix multiplication.
+ * @param vector input vector
+ * @param matrix input matrix
+ * @return vector-matrix product
+ */
+std::vector<int64_t> vectorMatrixMult(
+        std::vector<int64_t> vector,
+        std::vector<std::vector<int64_t>> matrix
+    )
+{
     std::vector<std::vector<int64_t>> matrixT = transpose(matrix);
     std::vector<int64_t> result;
     for (size_t i = 0; i < matrixT.size(); i++) {
@@ -147,6 +203,17 @@ std::vector<int64_t> vectorMatrixMult(std::vector<int64_t> vector, std::vector<s
 }
 
 
+/**
+ * Compute the inner product between two encrypted vectors.
+ * @param cryptoContext the crypto context
+ * @param publicKey the public key
+ * @param vector1C first encrypted input vector
+ * @param vector2C second encrypted input vector
+ * @param vectorLength length of the vector (in plaintext)
+ * @param masking whether you want the output ciphertext to contain only the
+ * output value in the first position, and 0s in the other positions
+ * @return encrypted inner product value
+ */
 Ciphertext<DCRTPoly> innerProductCC(
         CryptoContext<DCRTPoly> cryptoContext,
         PublicKey<DCRTPoly> publicKey,
@@ -174,6 +241,17 @@ Ciphertext<DCRTPoly> innerProductCC(
 }
 
 
+/**
+ * Compute the inner product between an encrypted vector and a plaintext vector.
+ * The naive algorithm is used.
+ * @param cryptoContext the crypto context
+ * @param publicKey the public key
+ * @param vector1C first encrypted input vector
+ * @param vector2 second (plaintext) input vector
+ * @param masking whether you want the output ciphertext to contain only the
+ * output value in the first position, and 0s in the other positions
+ * @return encrypted inner product value
+ */
 Ciphertext<DCRTPoly> innerProductCP(
         CryptoContext<DCRTPoly> cryptoContext,
         PublicKey<DCRTPoly> publicKey,
@@ -202,6 +280,16 @@ Ciphertext<DCRTPoly> innerProductCP(
 }
 
 
+/**
+ * Compute the inner product between an encrypted vector and a plaintext vector.
+ * The recursive vector sum-up is used.
+ * @param cryptoContext the crypto context
+ * @param vector1C first encrypted input vector
+ * @param vector2 second (plaintext) input vector
+ * @param masking whether you want the output ciphertext to contain only the
+ * output value in the first position, and 0s in the other positions
+ * @return encrypted inner product value
+ */
 Ciphertext<DCRTPoly> innerProductFastCP(
         CryptoContext<DCRTPoly> cryptoContext,
         Ciphertext<DCRTPoly> vector1C,
@@ -226,6 +314,16 @@ Ciphertext<DCRTPoly> innerProductFastCP(
 }
 
 
+/**
+ * Compute the product between an encrypted vector and a plaintext matrix.
+ * The naive algorithm with the naive inner product implementation is used.
+ * The output is automatically masked.
+ * @param cryptoContext the crypto context
+ * @param publicKey the public key
+ * @param vectorC encrypted input vector
+ * @param matrix (plaintext) input matrix
+ * @return encrypted inner product value
+ */
 Ciphertext<DCRTPoly> vectorMatrixMultByInnProdCP(
         CryptoContext<DCRTPoly> cryptoContext,
         PublicKey<DCRTPoly> publicKey,
@@ -247,6 +345,17 @@ Ciphertext<DCRTPoly> vectorMatrixMultByInnProdCP(
 }
 
 
+/**
+ * Compute the product between an encrypted vector and a plaintext matrix.
+ * The naive algorithm with the recursive-sum inner product implementation is
+ * used.
+ * The output is automatically masked.
+ * @param cryptoContext the crypto context
+ * @param publicKey the public key
+ * @param vectorC encrypted input vector
+ * @param matrix (plaintext) input matrix
+ * @return encrypted inner product value
+ */
 Ciphertext<DCRTPoly> vectorMatrixMultByInnProdFastCP(
         CryptoContext<DCRTPoly> cryptoContext,
         PublicKey<DCRTPoly> publicKey,
@@ -269,14 +378,21 @@ Ciphertext<DCRTPoly> vectorMatrixMultByInnProdFastCP(
 
 
 /**
- * vectorMatrixMultPackCP
- * @param cryptoContext
- * @param publicKey
- * @param vectorC
- * @param matrix
- * @param packing true column-wise, false row-wise
- * @param masking
- * @param transposing
+ * Compute the product between an encrypted vector and a plaintext matrix.
+ * The naive algorithm with the recursive-sum inner product implementation is
+ * used.
+ * The output is automatically masked.
+ * @param cryptoContext the crypto context
+ * @param publicKey the public key
+ * @param vectorC encrypted input vector
+ * @param matrix (plaintext) input matrix
+ * @param packing true for column-wise, false for row-wise
+ * @param numRowsPrevMatrix only needed for row-wise packing
+ * @param masking whether you want the output ciphertext to contain only the
+ * output value in the first positions, and 0s in the other positions
+ * @param transposing only for column-wise packing, whether you want the output
+ * vector to be transposed (in terms of packing) and so be ready for a new
+ * column-wise pack multiplication
  * @return
  */
 Ciphertext<DCRTPoly> vectorMatrixMultPackCP(
@@ -386,7 +502,7 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Generating rotation keys... ";
     std::vector<int32_t> indexList = {};
-    for (int i = -1024; i <= 1024; i++) indexList.push_back(i);
+    for (int i = -100; i <= 100; i++) indexList.push_back(i);
     for (int i = 0; i <= 10; i++) {
         indexList.push_back(1 << i);
         indexList.push_back(-(1 << i));
@@ -522,9 +638,11 @@ int main(int argc, char* argv[]) {
     // Vector * matrix1 * matrix2
     ////////////////////////////////////////////////////////////
 
-    const size_t n1 = 30;
-    const size_t n2 = 20;
-    const size_t n3 = 25;
+    // If you increase the matrix sizes, then remember to also generate more
+    // rotations keys accordingly.
+    const size_t n1 = 5;
+    const size_t n2 = 3;
+    const size_t n3 = 4;
     const int64_t MAX_VALUE = 100;
     
     std::vector<int64_t> vector = genRandVect(n1, MAX_VALUE);
