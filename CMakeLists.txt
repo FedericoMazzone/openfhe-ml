@@ -45,4 +45,4 @@ endif()
 ### add_executable( EXECUTABLE-NAME SOURCES )
 ###
 ### EXAMPLE:
-add_executable( program matrix-multiplication.cpp )
+add_executable( program src/matrix-multiplication.cpp )
