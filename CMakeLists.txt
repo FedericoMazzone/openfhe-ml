@@ -45,5 +45,10 @@ endif()
 ### add_executable( EXECUTABLE-NAME SOURCES )
 ###
 ### EXAMPLE:
-set(SOURCES src/test.cpp src/data_utils/load_mnist.cpp src/data_utils/load_mnist.h)
+set(SOURCES src/test.cpp
+            src/data_utils/load_mnist.cpp
+            src/data_utils/load_mnist.h
+            src/he_utils/matrix_multiplication.cpp
+            src/he_utils/matrix_multiplication.h
+)
 add_executable( program ${SOURCES} )
