@@ -37,3 +37,6 @@ shell_scripts/
 
 # Build directory
 build/
+
+# Data
+data/
