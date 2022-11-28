@@ -320,7 +320,7 @@ Ciphertext<DCRTPoly> innerProductFastCP(
  * @param publicKey the public key
  * @param vectorC encrypted input vector
  * @param matrix (plaintext) input matrix
- * @return encrypted inner product value
+ * @return encrypted vector-matrix product
  */
 Ciphertext<DCRTPoly> vectorMatrixMultByInnProdCP(
         CryptoContext<DCRTPoly> cryptoContext,
@@ -352,7 +352,7 @@ Ciphertext<DCRTPoly> vectorMatrixMultByInnProdCP(
  * @param publicKey the public key
  * @param vectorC encrypted input vector
  * @param matrix (plaintext) input matrix
- * @return encrypted inner product value
+ * @return encrypted vector-matrix product
  */
 Ciphertext<DCRTPoly> vectorMatrixMultByInnProdFastCP(
         CryptoContext<DCRTPoly> cryptoContext,
@@ -395,7 +395,7 @@ Ciphertext<DCRTPoly> vectorMatrixMultByInnProdFastCP(
  * @param transposing only for column-wise packing, whether you want the output
  * vector to be transposed (in terms of packing) and so be ready for a new
  * column-wise pack multiplication
- * @return
+ * @return encrypted vector-matrix product
  */
 Ciphertext<DCRTPoly> vectorMatrixMultPackCP(
         CryptoContext<DCRTPoly> cryptoContext,

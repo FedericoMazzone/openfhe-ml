@@ -62,7 +62,7 @@ std::vector<int64_t> vectorMatrixMult(
  * @param transposing only for column-wise packing, whether you want the output
  * vector to be transposed (in terms of packing) and so be ready for a new
  * column-wise pack multiplication
- * @return
+ * @return encrypted vector-matrix product
  */
 Ciphertext<DCRTPoly> vectorMatrixMultPackCP(
         CryptoContext<DCRTPoly> cryptoContext,
