@@ -39,4 +39,5 @@ shell_scripts/
 build/
 
 # Data
-data/
+data/*
+!data/models/
