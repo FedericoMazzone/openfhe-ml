@@ -1,33 +1,38 @@
+//==================================================================================
+// BSD 2-Clause License
+//
+// Copyright (c) 2014-2022, NJIT, Duality Technologies Inc. and other contributors
+//
+// All rights reserved.
+//
+// Author TPOC: contact@openfhe.org
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this
+//    list of conditions and the following disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice,
+//    this list of conditions and the following disclaimer in the documentation
+//    and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//==================================================================================
+
+
 #include "openfhe.h"
 
 using namespace lbcrypto;
-
-
-/**
- * Generate random vector of size length, with values in [-maxValue, maxValue).
- * @param length desired length of the vector
- * @param maxValue absolute maximum value of the coefficients
- * @return random vector
- */
-std::vector<int64_t> genRandVect(
-        size_t length,
-        int64_t maxValue
-    );
-
-
-/**
- * Generate random matrix of size (rows x cols), with values in [-maxValue,
- * maxValue).
- * @param rows desired number of rows
- * @param cols desired number of columns
- * @param maxValue absolute maximum value of the coefficients
- * @return random matrix
- */
-std::vector<std::vector<int64_t>> genRandMatrix(
-        size_t rows,
-        size_t cols,
-        int64_t maxValue
-    );
 
 
 /**
@@ -37,9 +42,9 @@ std::vector<std::vector<int64_t>> genRandMatrix(
  * @return vector-matrix product
  */
 std::vector<int64_t> vectorMatrixMult(
-        std::vector<int64_t> vector,
-        std::vector<std::vector<int64_t>> matrix
-    );
+    std::vector<int64_t> vector,
+    std::vector<std::vector<int64_t>> matrix
+);
 
 
 /**
@@ -65,12 +70,12 @@ std::vector<int64_t> vectorMatrixMult(
  * @return encrypted vector-matrix product
  */
 Ciphertext<DCRTPoly> vectorMatrixMultPackCP(
-        CryptoContext<DCRTPoly> cryptoContext,
-        PublicKey<DCRTPoly> publicKey,
-        Ciphertext<DCRTPoly> vectorC,
-        std::vector<std::vector<int64_t>> matrix,
-        bool packing = true,
-        int numRowsPrevMatrix = -1,
-        bool masking = true,
-        bool transposing = true
-    );
+    CryptoContext<DCRTPoly> cryptoContext,
+    PublicKey<DCRTPoly> publicKey,
+    Ciphertext<DCRTPoly> vectorC,
+    std::vector<std::vector<int64_t>> matrix,
+    bool packing = true,
+    int numRowsPrevMatrix = -1,
+    bool masking = true,
+    bool transposing = true
+);
