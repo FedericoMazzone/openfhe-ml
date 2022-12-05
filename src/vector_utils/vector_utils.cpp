@@ -199,7 +199,7 @@ int64_t mod(
 {
     value = value % modulus;
 
-    if (value >= (modulus >> 1))
+    if (value > ((modulus % 2 == 0) ? (modulus >> 1) - 1 : (modulus >> 1)))
         value -= modulus;
     else if (value < - (modulus >> 1))
         value += modulus;
