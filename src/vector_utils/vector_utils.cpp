@@ -34,12 +34,17 @@ void printMatrix(
 
 std::vector<int64_t> addVectors(
     const std::vector<int64_t> &vector1,
-    const std::vector<int64_t> &vector2
+    const std::vector<int64_t> &vector2,
+    const int64_t &modulus
 )
 {
     std::vector<int64_t> result;
-    for (size_t i = 0; i < vector1.size(); i++)
-        result.push_back(vector1[i] + vector2[i]);
+    if (modulus == 0)
+        for (size_t i = 0; i < vector1.size(); i++)
+            result.push_back(vector1[i] + vector2[i]);
+    else
+        for (size_t i = 0; i < vector1.size(); i++)
+            result.push_back(mod(vector1[i] + vector2[i], modulus));
     return result;
 }
 
@@ -184,4 +189,20 @@ size_t argmax(
         }
     }
     return argmax;
+}
+
+
+int64_t mod(
+    int64_t value,
+    const int64_t &modulus
+)
+{
+    value = value % modulus;
+
+    if (value >= (modulus >> 1))
+        value -= modulus;
+    else if (value < - (modulus >> 1))
+        value += modulus;
+
+    return value;
 }

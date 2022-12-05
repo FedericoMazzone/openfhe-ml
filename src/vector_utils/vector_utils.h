@@ -24,11 +24,13 @@ void printMatrix(
  * Add two vectors elementwise.
  * @param vector1 first input vector
  * @param vector2 second input vector
+ * @param modulus optional modulus
  * @return the sum of the two input vectors
  */
 std::vector<int64_t> addVectors(
     const std::vector<int64_t> &vector1,
-    const std::vector<int64_t> &vector2
+    const std::vector<int64_t> &vector2,
+    const int64_t &modulus = 0
 );
 
 
@@ -149,4 +151,16 @@ std::vector<std::vector<int64_t>> scaleMatrix(
  */
 size_t argmax(
     const std::vector<int64_t> &vector
+);
+
+
+/**
+ * Compute the mod operation in the range [- mod / 2, ... mod / 2).
+ * @param value input value
+ * @param modulus input modulus
+ * @return representative of value (mod modulus)
+ */
+int64_t mod(
+    int64_t value,
+    const int64_t &modulus
 );
