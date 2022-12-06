@@ -45,9 +45,10 @@ endif()
 ### add_executable( EXECUTABLE-NAME SOURCES )
 ###
 ### EXAMPLE:
-set(SOURCES src/ml_inference.cpp
-            src/data_utils/load_mnist.cpp
-            src/he_utils/matrix_multiplication.cpp
-            src/vector_utils/vector_utils.cpp
-)
+# set(SOURCES src/ml_inference.cpp
+#             src/data_utils/load_mnist.cpp
+#             src/he_utils/matrix_multiplication.cpp
+#             src/vector_utils/vector_utils.cpp
+# )
+set(SOURCES src/threshold_bootstrap_BFV.cpp src/vector_utils/vector_utils.cpp)
 add_executable( program ${SOURCES} )
