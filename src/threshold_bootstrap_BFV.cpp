@@ -548,7 +548,7 @@ namespace protocol {
      * @param ciphertext the ciphertext
      * @return refreshed ciphertext
      */
-    Ciphertext<DCRTPoly> bootstrap_not_working(
+    Ciphertext<DCRTPoly> multipartyBootstrap_not_working(
         const CryptoContext<DCRTPoly> &cc,
         const std::vector<PrivateKey<DCRTPoly>> &s,
         const Ciphertext<DCRTPoly> &ciphertext
@@ -598,7 +598,7 @@ namespace protocol {
      * @param ciphertext the ciphertext
      * @return refreshed ciphertext
      */
-    Ciphertext<DCRTPoly> bootstrap(
+    Ciphertext<DCRTPoly> multipartyBootstrap(
         const CryptoContext<DCRTPoly> &cc,
         const std::vector<PrivateKey<DCRTPoly>> &s,
         const Ciphertext<DCRTPoly> &ciphertext
@@ -773,7 +773,7 @@ int main(int argc, char* argv[]) {
     // Bootstrapping
     ////////////////////////////////////////////////////////////
 
-    Ciphertext<DCRTPoly> vbsC = protocol::bootstrap(cc, s, vmultC);
+    Ciphertext<DCRTPoly> vbsC = protocol::multipartyBootstrap(cc, s, vmultC);
     Plaintext vbsDP = protocol::multipartyDecrypt(cc, s, vbsC);
     vbsDP->SetLength(vP->GetLength());
     std::cout << "Bootstrapping " << vbsDP << std::endl;
