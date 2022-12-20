@@ -44,17 +44,17 @@ inline void printDecryption(
         Plaintext plaintext = Decrypt(cc, s, c);
         if (length > 0) plaintext->SetLength(length);
         std::cout << "Decryption " << label << " [level " << c->GetLevel()
-                << "] " << plaintext;
+                  << "] " << plaintext;
     } catch (const std::exception& e) {
         std::cout << "Decryption " << label << " [level " << c->GetLevel()
-                << "] failed" << std::endl;
+                  << "] failed" << std::endl;
     }
 }
 
 
 
 /**
- * Proposal for shifting operators for Ciphertext.
+ * Proposal for ciphertext shifting and plaintext-ciphertext addition operators.
  * They should go inside CiphertextImpl class.
 */
 template <typename Element>
@@ -65,6 +65,31 @@ Ciphertext<Element> operator<<(const Ciphertext<Element>& a, int32_t index) {
 template <typename Element>
 Ciphertext<Element> operator>>(const Ciphertext<Element>& a, int32_t index) {
     return a->GetCryptoContext()->EvalRotate(a, -index);
+}
+
+template <typename Element>
+Ciphertext<Element> operator+(const Ciphertext<Element>& a, const Plaintext &b) {
+    return a->GetCryptoContext()->EvalAdd(a, b);
+}
+
+template <typename Element>
+Ciphertext<Element> operator+(const Plaintext &a, const Ciphertext<Element>& b) {
+    return b + a;
+}
+
+template <typename Element>
+Ciphertext<Element> operator+(const Ciphertext<Element>& a, const std::vector<double> &b) {
+    CryptoContext<Element> cc = a->GetCryptoContext();
+    if (cc->getSchemeId() != "CKKSRNS") {
+        // throw suitable exception
+    }
+    auto plaintext = cc->MakeCKKSPackedPlaintext(b);
+    return a + plaintext;
+}
+
+template <typename Element>
+Ciphertext<Element> operator+(const std::vector<double> &a, const Ciphertext<Element>& b) {
+    return b + a;
 }
 
 
@@ -103,7 +128,11 @@ int main(int argc, char* argv[]) {
     std::cout << plaintext;
 
     printDecryption(cc, kp.secretKey, c, vP->GetLength(), "v");
-    printDecryption(cc, kp.secretKey, c * c, vP->GetLength(), "v");
+    printDecryption(cc, kp.secretKey, c + c, vP->GetLength(), "v + v");
+    printDecryption(cc, kp.secretKey, c * c, vP->GetLength(), "v * v");
+
+    printDecryption(cc, kp.secretKey, c + vP, vP->GetLength(), "v + v");
+    printDecryption(cc, kp.secretKey, c + v, vP->GetLength(), "v + v");
     printDecryption(cc, kp.secretKey, c << 3, vP->GetLength() - 3, "v << 3");
 
     // Before: a bit cumbersome.
@@ -115,6 +144,8 @@ int main(int argc, char* argv[]) {
 
     // After: useful to check things on the fly.
     printDecryption(cc, kp.secretKey, c >> 2, vP->GetLength() + 2, "v >> 2");
+
+    
 
     return 0;
     
